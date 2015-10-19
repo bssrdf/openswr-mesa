@@ -1,0 +1,69 @@
+from sys import executable as python_cmd
+import distutils.version
+
+Import('*')
+
+if not env['llvm']:
+    print 'warning: LLVM disabled: not building swr'
+    Return()
+
+env = env.Clone()
+
+env.MSVC2008Compat()
+
+env.Append(CPPDEFINES = [
+	'__STDC_CONSTANT_MACROS',
+	'__STDC_LIMIT_MACROS',
+    'KNOB_ARCH=KNOB_ARCH_AVX2',
+	])
+
+env.Append(CCFLAGS = [
+    '-std=c++11',
+    '-march=core-avx2',
+    ])
+
+env.Prepend(CPPPATH = [
+    'rasterizer',
+    'rasterizer/core',
+    'rasterizer/jitter',
+    'rasterizer/scripts',
+    ])
+
+gen_knobs = env.CodeGenerate(
+    target = 'rasterizer/scripts/gen_knobs.cpp',
+    script = 'rasterizer/scripts/gen_knobs.py',
+    source = [],
+    command = python_cmd + ' $SCRIPT ' + Dir('rasterizer/scripts').abspath
+)
+
+gen_knobs = env.CodeGenerate(
+    target = 'rasterizer/scripts/gen_knobs.h',
+    script = 'rasterizer/scripts/gen_knobs.py',
+    source = [],
+    command = python_cmd + ' $SCRIPT ' + Dir('rasterizer/scripts').abspath
+)
+
+state_llvm = env.CodeGenerate(
+    target = 'rasterizer/jitter/state_llvm.h',
+    script = 'rasterizer/jitter/scripts/gen_llvm_types.py',
+    source = 'rasterizer/core/state.h',
+    command = python_cmd + ' $SCRIPT --input $SOURCE --output $TARGET'
+)
+
+source = ['rasterizer/scripts/gen_knobs.cpp', 'rasterizer/scripts/gen_knobs.h']
+source += env.ParseSourceList('Makefile.sources', [
+    'CXX_SOURCES',
+    'COMMON_CXX_SOURCES',
+    'CORE_CXX_SOURCES',
+    'JITTER_CXX_SOURCES',
+    'MEMORY_CXX_SOURCES'
+])
+
+swr = env.ConvenienceLibrary(
+	target = 'swr',
+	source = source,
+	)
+
+env.Alias('swr', swr)
+
+Export('swr')

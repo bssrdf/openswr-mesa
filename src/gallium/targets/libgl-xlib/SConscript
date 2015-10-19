@@ -46,6 +46,10 @@ if env['llvm']:
     env.Append(CPPDEFINES = ['GALLIUM_LLVMPIPE'])
     env.Prepend(LIBS = [llvmpipe])
 
+if env['llvm']:
+    env.Append(CPPDEFINES = ['GALLIUM_SWR'])
+    env.Prepend(LIBS = [swr])
+
 # Disallow undefined symbols
 if env['platform'] != 'darwin':
     env.Append(SHLINKFLAGS = ['-Wl,-z,defs'])

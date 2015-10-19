@@ -1571,6 +1571,11 @@ AC_SUBST([LLVM_LIBS])
 AC_SUBST([LLVM_LDFLAGS])
 AC_SUBST([LLVM_INCLUDEDIR])
 AC_SUBST([LLVM_VERSION])
+AC_SUBST([SWR_LIBDIR])
+AC_SUBST([SWR_ARCH])
+AC_SUBST([SWR_ARCH_FLAG])
+AC_SUBST([SWR_NATIVE])
+AC_SUBST([SWR_INCLUDEDIR])
 AC_SUBST([CLANG_RESOURCE_DIR])
 
 case "x$enable_opengl$enable_gles1$enable_gles2" in
@@ -1995,6 +2000,9 @@ if test -n "$with_gallium_drivers"; then
                 HAVE_GALLIUM_LLVMPIPE=yes
             fi
             ;;
+        xswr)
+            HAVE_GALLIUM_SWR=yes
+            ;;
         xvc4)
             HAVE_GALLIUM_VC4=yes
             gallium_require_drm "vc4"
@@ -2060,6 +2068,41 @@ if test "x$MESA_LLVM" != x0; then
     fi
 fi
 
+dnl SWR include/library
+
+AC_ARG_WITH([swr-includedir],
+    [AS_HELP_STRING([--with-swr-includedir], [Path to SWR includes])],
+    [SWR_INCLUDEDIR="$withval"],
+    [SWR_INCLUDEDIR=''])
+
+AC_ARG_WITH([swr-libdir],
+    [AS_HELP_STRING([--with-swr-libdir], [Path to SWR library])],
+    [SWR_LIBDIR="$withval"],
+    [SWR_LIBDIR=''])
+
+AC_ARG_WITH([swr-arch],
+    [AS_HELP_STRING([--with-swr-arch], [AVX architecture for swr (AVX | CORE_AVX2) ])],
+    [SWR_ARCH="$withval"],
+    [SWR_ARCH="CORE-AVX2"])
+
+case "$SWR_ARCH" in
+"AVX")
+    SWR_ARCH_FLAG='-march=core-avx-i -DKNOB_ARCH=KNOB_ARCH_AVX '
+    ;;
+"CORE-AVX2")
+    SWR_ARCH_FLAG='-march=core-avx2 -DKNOB_ARCH=KNOB_ARCH_AVX2 '
+    ;;
+**)
+    SWR_ARCH_FLAG='-march=core-avx2 -DKNOB_ARCH=KNOB_ARCH_AVX2 '
+esac
+
+AC_ARG_ENABLE([swr-native],
+    [AS_HELP_STRING([--enable-swr-native],
+        [use in-tree version of SWR core @<:@default=disabled@:>@])],
+    [enable_swr_native="$enableval"],
+    [enable_swr_native=no]
+)
+
 AM_CONDITIONAL(HAVE_GALLIUM_SVGA, test "x$HAVE_GALLIUM_SVGA" = xyes)
 AM_CONDITIONAL(HAVE_GALLIUM_I915, test "x$HAVE_GALLIUM_I915" = xyes)
 AM_CONDITIONAL(HAVE_GALLIUM_ILO, test "x$HAVE_GALLIUM_ILO" = xyes)
@@ -2072,6 +2115,8 @@ AM_CONDITIONAL(HAVE_GALLIUM_NOUVEAU, test "x$HAVE_GALLIUM_NOUVEAU" = xyes)
 AM_CONDITIONAL(HAVE_GALLIUM_FREEDRENO, test "x$HAVE_GALLIUM_FREEDRENO" = xyes)
 AM_CONDITIONAL(HAVE_GALLIUM_SOFTPIPE, test "x$HAVE_GALLIUM_SOFTPIPE" = xyes)
 AM_CONDITIONAL(HAVE_GALLIUM_LLVMPIPE, test "x$HAVE_GALLIUM_LLVMPIPE" = xyes)
+AM_CONDITIONAL(HAVE_GALLIUM_SWR, test "x$HAVE_GALLIUM_SWR" = xyes)
+AM_CONDITIONAL(SWR_NATIVE, test "x$enable_swr_native" = xyes)
 AM_CONDITIONAL(HAVE_GALLIUM_VC4, test "x$HAVE_GALLIUM_VC4" = xyes)
 
 AM_CONDITIONAL(HAVE_GALLIUM_STATIC_TARGETS, test "x$enable_shared_pipe_drivers" = xno)
@@ -2190,6 +2235,7 @@ AC_CONFIG_FILES([Makefile
 		src/gallium/drivers/rbug/Makefile
 		src/gallium/drivers/softpipe/Makefile
 		src/gallium/drivers/svga/Makefile
+		src/gallium/drivers/swr/Makefile
 		src/gallium/drivers/trace/Makefile
 		src/gallium/drivers/vc4/Makefile
 		src/gallium/state_trackers/clover/Makefile
@@ -2369,6 +2415,14 @@ if test "x$MESA_LLVM" = x1; then
     echo "        LLVM_CXXFLAGS:   $LLVM_CXXFLAGS"
     echo "        LLVM_CPPFLAGS:   $LLVM_CPPFLAGS"
     echo "        LLVM_LDFLAGS:    $LLVM_LDFLAGS"
+    echo ""
+fi
+if test "x$HAVE_GALLIUM_SWR" = xyes; then
+    echo "        SWR_INCLUDEDIR:  $SWR_INCLUDEDIR"
+    echo "        SWR_LIBDIR:      $SWR_LIBDIR"
+    echo "        SWR_ARCH:        $SWR_ARCH"
+    echo "        SWR_ARCH_FLAG:   $SWR_ARCH_FLAG"
+    echo "        SWR_NATIVE:      $enable_swr_native"
     echo ""
 fi
 echo "        PYTHON2:         $PYTHON2"

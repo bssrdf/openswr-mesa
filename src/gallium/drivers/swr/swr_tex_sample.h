@@ -1,6 +1,6 @@
 /**************************************************************************
  *
- * Copyright 2009 VMware, Inc.
+ * Copyright 2007 VMware, Inc.
  * All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,68 +25,23 @@
  *
  **************************************************************************/
 
+#pragma once
 
-#ifndef LP_BLD_INIT_H
-#define LP_BLD_INIT_H
+#include "gallivm/lp_bld.h"
 
-
-#include "pipe/p_compiler.h"
-#include "util/u_pointer.h" // for func_pointer
-#include "lp_bld.h"
-#include <llvm-c/ExecutionEngine.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-struct gallivm_state
-{
-   LLVMModuleRef module;
-   LLVMExecutionEngineRef engine;
-   LLVMTargetDataRef target;
-   LLVMPassManagerRef passmgr;
-   LLVMContextRef context;
-   LLVMBuilderRef builder;
-   LLVMMCJITMemoryManagerRef memorymgr;
-   struct lp_generated_code *code;
-   unsigned compiled;
+struct swr_sampler_static_state {
+   /*
+    * These attributes are effectively interleaved for more sane key handling.
+    * However, there might be lots of null space if the amount of samplers and
+    * textures isn't the same.
+    */
+   struct lp_static_sampler_state sampler_state;
+   struct lp_static_texture_state texture_state;
 };
 
-
-boolean
-lp_build_init(void);
-
-
-struct gallivm_state *
-gallivm_create(const char *name, LLVMContextRef context);
-
-void
-gallivm_destroy(struct gallivm_state *gallivm);
-
-void
-gallivm_free_ir(struct gallivm_state *gallivm);
-
-void
-gallivm_verify_function(struct gallivm_state *gallivm,
-                        LLVMValueRef func);
-
-void
-gallivm_compile_module(struct gallivm_state *gallivm);
-
-func_pointer
-gallivm_jit_function(struct gallivm_state *gallivm,
-                     LLVMValueRef func);
-
-void
-lp_set_load_alignment(LLVMValueRef Inst,
-                       unsigned Align);
-
-void
-lp_set_store_alignment(LLVMValueRef Inst,
-		       unsigned Align);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* !LP_BLD_INIT_H */
+/**
+ * Pure-LLVM texture sampling code generator.
+ *
+ */
+struct lp_build_sampler_soa *
+swr_sampler_soa_create(const struct swr_sampler_static_state *key);
